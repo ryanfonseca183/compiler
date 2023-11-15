@@ -63,7 +63,29 @@ class Lexer:
             quit()
         self.file.close()
 
+    def getChar(self):
+        if self.file is None:
+            print('ERROR: There\'s no open file')
+            quit()
+        elif len(self.buffer) > 0:
+            c = self.buffer[0]
+            self.buffer = self.buffer[1:]
+            return c
+        else:
+            c = self.file.read(1)
+            return None if len(c) == 0 else c
+
+    def ungetChar(self, c):
+        if not c is None:
+            self.buffer = self.buffer + c
+
 if __name__== "__main__":
     lex = Lexer('exemplo.toy')
     lex.openFile()
+    print(lex.getChar())
+    print(lex.getChar())
+    c = lex.getChar()
+    print(c)
+    lex.ungetChar(c)
+    print(lex.getChar())
     lex.closeFile()
