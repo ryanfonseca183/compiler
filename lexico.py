@@ -113,6 +113,8 @@ class Lexer:
                     state = 3
                 elif char == '#':
                     state = 5
+                elif char == '"':
+                    state = 4
                 else:
                     return Token(TypeToken.ERROR, '<' + char + '>', self.line)
             elif state == 2:
@@ -136,6 +138,18 @@ class Lexer:
                 if char is None or (not char.isdigit()):
                     self.ungetChar(char)
                     return Token(TypeToken.CTE, lexeme, self.line)
+            elif state == 4:
+                if char != '"':
+                    lexeme = lexeme + char
+                char = self.getChar()
+                if char == '\n':
+                    return Token(TypeToken.ERROR, '<' + lexeme + '>', self.line)
+                if char == '"':
+                    if len(lexeme) > 0:
+                        return Token(TypeToken.CADEIA, lexeme, self.line)
+                    else:
+                        state = 1
+                
             elif state == 5:
                 # consumindo comentario
                 while (not char is None) and (char != '\n'):
