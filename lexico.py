@@ -24,11 +24,11 @@ class TypeToken:
     VAR = (21, 'VAR')
     INT = (22, 'INT')
     REAL = (23, 'REAL')
-    CHAR = (24, 'CHAR')
-    IF = (25, 'IF')
-    ELSE = (26, 'ELSE')
-    WHILE = (27, 'WHILE')
-    READ = (28, 'READ')
+    BOOL = (24, 'BOOL')
+    CHAR = (25, 'CHAR')
+    IF = (26, 'IF')
+    ELSE = (27, 'ELSE')
+    WHILE = (28, 'WHILE')
     FALSE = (29, 'FALSE')
     TRUE = (30, 'TRUE')
 
@@ -42,6 +42,22 @@ class Token:
         self.line = line
 
 class Lexer:
+    reservedWords = {
+        'PROGRAM': TypeToken.PROGRAM,
+        'VAR': TypeToken.VAR,
+        'INT': TypeToken.INT,
+        'REAL': TypeToken.REAL,
+        'BOOL': TypeToken.BOOL,
+        'CHAR': TypeToken.CHAR,
+        'IF': TypeToken.IF,
+        'ELSE': TypeToken.ELSE,
+        'WHILE': TypeToken.WHILE,
+        'READ': TypeToken.READ,
+        'WRITE': TypeToken.WRITE,
+        'FALSE': TypeToken.FALSE,
+        'TRUE': TypeToken.TRUE
+    }
+
     def __init__(self, fileName):
         self.fileName = fileName
         self.file = None
@@ -79,13 +95,56 @@ class Lexer:
         if not c is None:
             self.buffer = self.buffer + c
 
+    def getToken(self):
+        lexeme = ''
+        state = 1
+        char = None
+        while (True):
+            if state == 1:
+                char = self.getChar()
+                if char is None:
+                    return Token(TypeToken.EOF, '<eof>', self.line)
+                elif char in {' ', '\t', '\n'}:
+                    if char == '\n':
+                        self.line = self.line + 1
+                elif char.isalpha():
+                    state = 2
+                elif char.isdigit():
+                    state = 3
+                elif char == '#':
+                    state = 5
+                else:
+                    return Token(TypeToken.ERROR, '<' + char + '>', self.line)
+            elif state == 2:
+                lexeme = lexeme + char
+                if len(lexeme) > 32:
+                    return Token(TypeToken.ERROR, '<' + lexeme + '>', self.line)
+                char = self.getChar()
+                if char is None or (not char.isalnum()):
+                    self.ungetChar(char)
+                    if lexeme in Lexer.reservedWords:
+                        return Token(Lexer.reservedWords[lexeme], lexeme, self.line)
+                    else:
+                        return Token(TypeToken.ID, lexeme, self.line)
+            elif state == 3:
+                lexeme = lexeme + char
+                char = self.getChar()
+                if char is None or (not char.isdigit()):
+                    self.ungetChar(char)
+                    return Token(TypeToken.CTE, lexeme, self.line)
+            elif state == 5:
+                # consumindo comentario
+                while (not char is None) and (char != '\n'):
+                    char = self.getChar()
+                self.ungetChar(char)
+                state = 1
+
 if __name__== "__main__":
     lex = Lexer('exemplo.toy')
     lex.openFile()
-    print(lex.getChar())
-    print(lex.getChar())
-    c = lex.getChar()
-    print(c)
-    lex.ungetChar(c)
-    print(lex.getChar())
+    while(True):
+       token = lex.getToken()
+       print("token= %s , lexema= (%s), linha= %d" % (token.label, token.lexeme, token.line))
+       if token.const == TypeToken.EOF[0]:
+           break
     lex.closeFile()
