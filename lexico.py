@@ -41,5 +41,29 @@ class Token:
         self.label = label
         self.line = line
 
+class Lexer:
+    def __init__(self, fileName):
+        self.fileName = fileName
+        self.file = None
+
+    def openFile(self):
+        if not self.file is None:
+            print('ERROR: File is already open')
+            quit()
+        elif not path.exists(self.fileName):
+            print('ERROR: File "%s" does not exists.' % self.fileName)
+            quit()
+        self.file = open(self.fileName, "r")
+        self.buffer = ''
+        self.line = 1
+
+    def closeFile(self):
+        if self.file is None:
+            print('ERROR: File is already close')
+            quit()
+        self.file.close()
+
 if __name__== "__main__":
-    print(token.const, token.label, token.lexeme)
+    lex = Lexer('exemplo.toy')
+    lex.openFile()
+    lex.closeFile()
