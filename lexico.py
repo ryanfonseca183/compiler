@@ -106,7 +106,7 @@ class Lexer:
                     return Token(TypeToken.EOF, '<eof>', self.line)
                 elif char in {' ', '\t', '\n'}:
                     if char == '\n':
-                        self.line = self.line + 1
+                        self.line += 1
                 elif char.isalpha():
                     state = 2
                 elif char.isdigit():
@@ -115,7 +115,7 @@ class Lexer:
                     state = 4
                 elif char in {'=', ';', ',', ':', '+', '-', '*', '!', '(', ')', '{', '}', '=', '<', '>'}:
                     state = 5
-                elif char == '#':
+                elif char == '/':
                     state = 6
                 else:
                     return Token(TypeToken.ERROR, '<' + char + '>', self.line)
@@ -161,9 +161,6 @@ class Lexer:
                 lexeme = lexeme + char
                 if char in {'=', '<', '>'}:
                     nextChar = self.getChar()
-                    if nextChar == '\n':
-                        self.ungetChar(nextChar)
-                        state = 1
                     if nextChar == '=' or (char == '<' and nextChar == '>'):
                         lexeme = lexeme + nextChar
                     else:
@@ -193,9 +190,24 @@ class Lexer:
                     return Token(TypeToken.FECHACH, lexeme, self.line)
             elif state == 6:
                 # COMENTÁRIOS
-                while (not char is None) and (char != '\n'):
-                    char = self.getChar()
-                self.ungetChar(char)
+                nextChar = self.getChar()
+                if nextChar == '\n':
+                    return Token(TypeToken.ERROR, '<' + char + '>', self.line)
+                # REMOVE COMENTÁRIOS DE LINHA
+                if nextChar == '/':
+                    while (not char is None) and (char != '\n'):
+                        char = self.getChar()
+                    self.ungetChar(char)
+                # REMOVE COMENTÁRIOS DE MULTIPLAS LINHAS
+                if nextChar == '*':
+                    while (not char is None):
+                        char = self.getChar()
+                        if char == '\n':
+                            self.line += 1
+                        if char == '*':
+                            nextChar = self.getChar()
+                            if nextChar == '/':
+                                break
                 state = 1
 
 if __name__== "__main__":
