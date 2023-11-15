@@ -111,10 +111,12 @@ class Lexer:
                     state = 2
                 elif char.isdigit():
                     state = 3
-                elif char == '#':
-                    state = 5
                 elif char == '"':
                     state = 4
+                elif char in {'=', ';', ',', ':', '+', '-', '*', '!', '(', ')', '{', '}',}:
+                    state = 5
+                elif char == '#':
+                    state = 6
                 else:
                     return Token(TypeToken.ERROR, '<' + char + '>', self.line)
             elif state == 2:
@@ -149,8 +151,31 @@ class Lexer:
                         return Token(TypeToken.CADEIA, lexeme, self.line)
                     else:
                         state = 1
-                
             elif state == 5:
+                lexeme = lexeme + char
+                if char == '=':
+                    return Token(TypeToken.ATRIB, lexeme, self.line)
+                elif char == ';':
+                    return Token(TypeToken.PVIRG, lexeme, self.line)
+                elif char == ':':
+                    return Token(TypeToken.DPONTOS, lexeme, self.line)
+                elif char == ',':
+                    return Token(TypeToken.VIRG, lexeme, self.line)
+                elif char in {'+', '-'}:
+                    return Token(TypeToken.OPAD, lexeme, self.line)
+                elif char == '*':
+                    return Token(TypeToken.OPMULT, lexeme, self.line)
+                elif char == '!':
+                    return Token(TypeToken.OPNEG, lexeme, self.line)
+                elif char == '(':
+                    return Token(TypeToken.ABREPAR, lexeme, self.line)
+                elif char == ')':
+                    return Token(TypeToken.FECHAPAR, lexeme, self.line)
+                elif char == '{':
+                    return Token(TypeToken.ABRECH, lexeme, self.line)
+                elif char == '}':
+                    return Token(TypeToken.FECHACH, lexeme, self.line)
+            elif state == 6:
                 # consumindo comentario
                 while (not char is None) and (char != '\n'):
                     char = self.getChar()
@@ -162,7 +187,7 @@ if __name__== "__main__":
     lex.openFile()
     while(True):
        token = lex.getToken()
-       print("token= %s , lexema= (%s), linha= %d" % (token.label, token.lexeme, token.line))
+       print("token= %s , lexeme= (%s), line= %d" % (token.label, token.lexeme, token.line))
        if token.const == TypeToken.EOF[0]:
            break
     lex.closeFile()
