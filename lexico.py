@@ -32,8 +32,8 @@ class TypeToken:
     ID = (1, 'ID')
     READ = (2, 'READ')
     WRITE = (3, 'WRITE')
-    CTE = (4, 'CONSTANTE'),
-    CADEIA = (5, 'CADEIA'),
+    CTE = (4, 'CONSTANTE')
+    CADEIA = (5, 'CADEIA')
     ATRIB = (6, '=')
     OPREL = (7, 'RELACIONAL')
     OPAD = (8, 'ADIÇÃO')
@@ -48,16 +48,16 @@ class TypeToken:
     FECHACH = (17, '}')
     ERROR = (18, 'ERROR')
     EOF = (19, 'END OF FILE')
-    PROGRAM = (20, 'PROGRAM'),
-    VAR = (21, 'VAR'),
+    PROGRAM = (20, 'PROGRAM')
+    VAR = (21, 'VAR')
     INT = (22, 'INT')
-    REAL = (23, 'REAL'),
-    CHAR = (24, 'CHAR'),
-    IF = (25, 'IF'),
-    ELSE = (26, 'ELSE'),
-    WHILE = (27, 'WHILE'),
-    READ = (28, 'READ'),
-    FALSE = (29, 'FALSE'),
+    REAL = (23, 'REAL')
+    CHAR = (24, 'CHAR')
+    IF = (25, 'IF')
+    ELSE = (26, 'ELSE')
+    WHILE = (27, 'WHILE')
+    READ = (28, 'READ')
+    FALSE = (29, 'FALSE')
     TRUE = (30, 'TRUE')
 
 class Token:
@@ -70,4 +70,4 @@ class Token:
         self.line = line
 
 if __name__== "__main__":
-   print(TipoToken.IDENT)
+    print(token.const, token.label, token.lexeme)
