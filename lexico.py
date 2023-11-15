@@ -113,13 +113,14 @@ class Lexer:
                     state = 3
                 elif char == '"':
                     state = 4
-                elif char in {'=', ';', ',', ':', '+', '-', '*', '!', '(', ')', '{', '}',}:
+                elif char in {'=', ';', ',', ':', '+', '-', '*', '!', '(', ')', '{', '}', '=', '<', '>'}:
                     state = 5
                 elif char == '#':
                     state = 6
                 else:
                     return Token(TypeToken.ERROR, '<' + char + '>', self.line)
             elif state == 2:
+                #IDENTIFICADORES
                 lexeme = lexeme + char
                 if len(lexeme) > 32:
                     return Token(TypeToken.ERROR, '<' + lexeme + '>', self.line)
@@ -131,6 +132,7 @@ class Lexer:
                     else:
                         return Token(TypeToken.ID, lexeme, self.line)
             elif state == 3:
+                #CONSTANTES NUMÉRICAS REAIS/INTEIRAS
                 lexeme = lexeme + char
                 char = self.getChar()
                 if char == ".":
@@ -141,10 +143,13 @@ class Lexer:
                     self.ungetChar(char)
                     return Token(TypeToken.CTE, lexeme, self.line)
             elif state == 4:
+                #CADEIAS DE CARACTERES
                 if char != '"':
                     lexeme = lexeme + char
                 char = self.getChar()
                 if char == '\n':
+                    self.ungetChar(char)
+                    state = 1
                     return Token(TypeToken.ERROR, '<' + lexeme + '>', self.line)
                 if char == '"':
                     if len(lexeme) > 0:
@@ -152,7 +157,18 @@ class Lexer:
                     else:
                         state = 1
             elif state == 5:
+                #DEMAIS CLASSES DE TOKENS
                 lexeme = lexeme + char
+                if char in {'=', '<', '>'}:
+                    nextChar = self.getChar()
+                    if nextChar == '\n':
+                        self.ungetChar(nextChar)
+                        state = 1
+                    if nextChar == '=' or (char == '<' and nextChar == '>'):
+                        lexeme = lexeme + nextChar
+                    else:
+                        self.ungetChar(nextChar)
+                    return Token(TypeToken.OPREL, lexeme, self.line)
                 if char == '=':
                     return Token(TypeToken.ATRIB, lexeme, self.line)
                 elif char == ';':
@@ -176,7 +192,7 @@ class Lexer:
                 elif char == '}':
                     return Token(TypeToken.FECHACH, lexeme, self.line)
             elif state == 6:
-                # consumindo comentario
+                # COMENTÁRIOS
                 while (not char is None) and (char != '\n'):
                     char = self.getChar()
                 self.ungetChar(char)
