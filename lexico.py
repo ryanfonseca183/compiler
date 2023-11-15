@@ -129,6 +129,10 @@ class Lexer:
             elif state == 3:
                 lexeme = lexeme + char
                 char = self.getChar()
+                if char == ".":
+                    if "." in lexeme:
+                        return Token(TypeToken.ERROR, '<' + lexeme + '>', self.line)
+                    continue
                 if char is None or (not char.isdigit()):
                     self.ungetChar(char)
                     return Token(TypeToken.CTE, lexeme, self.line)
