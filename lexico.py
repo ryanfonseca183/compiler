@@ -1,31 +1,3 @@
-"""
-
- Linguagem Toy
-
-    Gramatica::
-
-    F* --> C F | C
-    C  --> A | R | P
-    A --> ident = E ;
-    R --> read ( ident ) ;
-    P --> print ( ident ) ;
-
-    E --> M Rs
-    Rs --> + M Rs | lambda
-    M --> Op Rm
-    Rm --> * Op Rm | lambda
-    Op --> ( E ) | num
-
-    Tokens::
-
-    IDENT ATRIB READ PTOVIRG PRINT ADD MULT OPENPAR CLOSEPAR NUM ERROR FIMARQ
-
-    Comentarios::
-
-    iniciam com # ate o fim da linha
-
-"""
-
 from os import path
 
 class TypeToken:
