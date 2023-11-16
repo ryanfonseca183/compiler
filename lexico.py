@@ -119,12 +119,12 @@ class Lexer:
                 elif char == '/':
                     state = 6
                 else:
-                    return Token(TypeToken.ERROR, '<' + char + '>', self.line)
+                    return Token(TypeToken.ERROR, char, self.line)
             elif state == 2:
                 #IDENTIFICADORES
                 lexeme = lexeme + char
                 if len(lexeme) > 32:
-                    return Token(TypeToken.ERROR, '<' + lexeme + '>', self.line)
+                    return Token(TypeToken.ERROR, lexeme, self.line)
                 char = self.getChar()
                 if char is None or (not re.match('^[A-Za-z0-9]+$', char)):
                     self.ungetChar(char)
@@ -138,7 +138,7 @@ class Lexer:
                 char = self.getChar()
                 if char == ".":
                     if "." in lexeme:
-                        return Token(TypeToken.ERROR, '<' + lexeme + '>', self.line)
+                        return Token(TypeToken.ERROR, lexeme, self.line)
                     continue
                 if char is None or (not char.isdigit()):
                     self.ungetChar(char)
@@ -151,7 +151,7 @@ class Lexer:
                 if char == '\n':
                     self.ungetChar(char)
                     state = 1
-                    return Token(TypeToken.ERROR, '<' + lexeme + '>', self.line)
+                    return Token(TypeToken.ERROR, lexeme, self.line)
                 if char == '"':
                     if len(lexeme) > 0:
                         return Token(TypeToken.CADEIA, lexeme, self.line)
@@ -193,7 +193,7 @@ class Lexer:
                 # COMENTÁRIOS
                 nextChar = self.getChar()
                 if nextChar == '\n':
-                    return Token(TypeToken.ERROR, '<' + char + '>', self.line)
+                    return Token(TypeToken.ERROR, char, self.line)
                 # REMOVE COMENTÁRIOS DE LINHA
                 if nextChar == '/':
                     while (char is not None) and (char != '\n'):
@@ -212,11 +212,11 @@ class Lexer:
                 state = 1
 
 if __name__== "__main__":
-    lex = Lexer('exemplos/exemplo5.txt')
+    lex = Lexer('exemplos/exemplo2.txt')
     lex.openFile()
     while(True):
        token = lex.getToken()
-       print("token= %s , lexeme= (%s), line= %d" % (token.label, token.lexeme, token.line))
+       print("token = %s \nlexeme = %s \nline = %d \n" % (token.label, token.lexeme, token.line))
        if token.const == TypeToken.EOF[0]:
            break
     lex.closeFile()
