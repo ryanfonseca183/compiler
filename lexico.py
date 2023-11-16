@@ -1,4 +1,5 @@
 from os import path
+import re
 
 class TypeToken:
     ID = (1, 'ID')
@@ -43,19 +44,19 @@ class Token:
 
 class Lexer:
     reservedWords = {
-        'PROGRAM': TypeToken.PROGRAM,
+        'program': TypeToken.PROGRAM,
         'VAR': TypeToken.VAR,
-        'INT': TypeToken.INT,
-        'REAL': TypeToken.REAL,
-        'BOOL': TypeToken.BOOL,
-        'CHAR': TypeToken.CHAR,
-        'IF': TypeToken.IF,
-        'ELSE': TypeToken.ELSE,
-        'WHILE': TypeToken.WHILE,
-        'READ': TypeToken.READ,
-        'WRITE': TypeToken.WRITE,
-        'FALSE': TypeToken.FALSE,
-        'TRUE': TypeToken.TRUE
+        'int': TypeToken.INT,
+        'real': TypeToken.REAL,
+        'bool': TypeToken.BOOL,
+        'char': TypeToken.CHAR,
+        'if': TypeToken.IF,
+        'else': TypeToken.ELSE,
+        'while': TypeToken.WHILE,
+        'read': TypeToken.READ,
+        'write': TypeToken.WRITE,
+        'false': TypeToken.FALSE,
+        'true': TypeToken.TRUE
     }
 
     def __init__(self, fileName):
@@ -107,7 +108,7 @@ class Lexer:
                 elif char in {' ', '\t', '\n'}:
                     if char == '\n':
                         self.line += 1
-                elif char.isalpha():
+                elif re.match('^[A-Za-z]+$', char):
                     state = 2
                 elif char.isdigit():
                     state = 3
@@ -125,7 +126,7 @@ class Lexer:
                 if len(lexeme) > 32:
                     return Token(TypeToken.ERROR, '<' + lexeme + '>', self.line)
                 char = self.getChar()
-                if char is None or (not char.isalnum()):
+                if char is None or (not re.match('^[A-Za-z0-9]+$', char)):
                     self.ungetChar(char)
                     if lexeme in Lexer.reservedWords:
                         return Token(Lexer.reservedWords[lexeme], lexeme, self.line)
@@ -165,9 +166,9 @@ class Lexer:
                         lexeme = lexeme + nextChar
                     else:
                         self.ungetChar(nextChar)
+                        if char == '=':
+                            return Token(TypeToken.ATRIB, lexeme, self.line)
                     return Token(TypeToken.OPREL, lexeme, self.line)
-                if char == '=':
-                    return Token(TypeToken.ATRIB, lexeme, self.line)
                 elif char == ';':
                     return Token(TypeToken.PVIRG, lexeme, self.line)
                 elif char == ':':
@@ -195,12 +196,12 @@ class Lexer:
                     return Token(TypeToken.ERROR, '<' + char + '>', self.line)
                 # REMOVE COMENTÁRIOS DE LINHA
                 if nextChar == '/':
-                    while (not char is None) and (char != '\n'):
+                    while (char is not None) and (char != '\n'):
                         char = self.getChar()
                     self.ungetChar(char)
                 # REMOVE COMENTÁRIOS DE MULTIPLAS LINHAS
                 if nextChar == '*':
-                    while (not char is None):
+                    while (char is not None):
                         char = self.getChar()
                         if char == '\n':
                             self.line += 1
@@ -211,7 +212,7 @@ class Lexer:
                 state = 1
 
 if __name__== "__main__":
-    lex = Lexer('exemplo.toy')
+    lex = Lexer('exemplos/exemplo5.txt')
     lex.openFile()
     while(True):
        token = lex.getToken()
