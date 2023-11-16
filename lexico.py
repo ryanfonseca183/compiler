@@ -104,7 +104,7 @@ class Lexer:
             if state == 1:
                 char = self.getChar()
                 if char is None:
-                    return Token(TypeToken.EOF, '<eof>', self.line)
+                    return Token(TypeToken.EOF, 'EOF', self.line)
                 elif char in {' ', '\t', '\n'}:
                     if char == '\n':
                         self.line += 1

@@ -163,7 +163,17 @@ class Syntactic:
             self.TERMO()
 
     def SE(self):
-        print('condicional')
+        self.consume(Type.IF)
+        self.consume(Type.ABREPAR)
+        self.EXPR()
+        self.consume(Type.FECHAPAR)
+        self.C_COMP()
+        self.H()
+
+    def H(self):
+        if self.currentEqualTo(Type.ELSE):
+            self.consume(Type.ELSE)
+            self.C_COMP()
 
     def ENQUANTO(self):
         print('repetição')
