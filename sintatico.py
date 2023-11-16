@@ -183,7 +183,11 @@ class Syntactic:
         self.C_COMP()
 
     def LEIA(self):
-        print('leitura')
+        self.consume(Type.READ)
+        self.consume(Type.ABREPAR)
+        self.LIST_ID()
+        self.consume(Type.FECHAPAR)
+        self.consume(Type.PVIRG)
 
     def ESCREVA(self):
         print('escrita')
