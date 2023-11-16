@@ -190,7 +190,28 @@ class Syntactic:
         self.consume(Type.PVIRG)
 
     def ESCREVA(self):
-        print('escrita')
+        self.consume(Type.WRITE)
+        self.consume(Type.ABREPAR)
+        self.LIST_W()
+        self.consume(Type.FECHAPAR)
+        self.consume(Type.PVIRG)
+
+    def LIST_W(self):
+        self.ELEM_W()
+        self.L()
+
+    def ELEM_W(self):
+        if (self.currentEqualTo(Type.CADEIA)):
+            self.consume(Type.CADEIA)
+        elif (self.currentIn(Type.ID, Type.ABREPAR, Type.CTE, Type.TRUE, Type.FALSE, Type.OPNEG)):
+            self.EXPR()
+        else:
+            self.syntaxError()
+
+    def L(self):
+        if self.currentEqualTo(Type.VIRG):
+            self.consume(Type.VIRG)
+            self.LIST_W()
 
     def G(self):
         if(self.currentIn(Type.ID, Type.IF, Type.WHILE, Type.READ, Type.WRITE)):
