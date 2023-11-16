@@ -176,7 +176,11 @@ class Syntactic:
             self.C_COMP()
 
     def ENQUANTO(self):
-        print('repetição')
+        self.consume(Type.WHILE)
+        self.consume(Type.ABREPAR)
+        self.EXPR()
+        self.consume(Type.FECHAPAR)
+        self.C_COMP()
 
     def LEIA(self):
         print('leitura')
