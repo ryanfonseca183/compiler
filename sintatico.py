@@ -20,6 +20,18 @@ class Syntactic:
 
     def currentEqualTo(self, token):
         return self.currentToken.const == token[0]
+    
+    def currentIn(self, *tokens):
+        for token in tokens:
+            if self.currentToken.const == token[0]:
+                return 1
+        return 0
+
+    def syntaxError(self):
+        print('[Line %d] Syntax Error: Unexpected "%s"' % (
+            self.currentToken.line, self.currentToken.lexeme
+        ))
+        quit()
 
     def consume(self, token):
         if not self.currentEqualTo(token):
@@ -34,10 +46,7 @@ class Syntactic:
         self.consume(Type.ID)
         self.consume(Type.PVIRG)
         self.DECLS()
-
-    def C_COMP(self):
-        print('ccomp')
-
+    
     def DECLS(self):
         if self.currentEqualTo(Type.VAR):
             self.consume(Type.VAR)
@@ -68,15 +77,106 @@ class Syntactic:
             self.consume(Type.REAL)
         elif self.currentEqualTo(Type.BOOL): 
             self.consume(Type.BOOL)
-        else:
+        elif self.currentEqualTo(Type.CHAR):
             self.consume(Type.CHAR)
+        else:
+            self.syntaxError()
 
     def E(self):
         if self.currentEqualTo(Type.VIRG):
             self.consume(Type.VIRG)
             self.LIST_ID()
+        
+    def C_COMP(self):
+        self.consume(Type.ABRECH)
+        self.LISTA_COMANDOS()
+        self.consume(Type.FECHACH)
 
+    def LISTA_COMANDOS(self):
+        self.COMANDOS()
+        self.G()
+    
+    def COMANDOS(self):
+        if (self.currentEqualTo(Type.ID)): 
+            self.ATRIBUICAO()
+        elif (self.currentEqualTo(Type.IF)):
+            self.SE()
+        elif (self.currentEqualTo(Type.WHILE)):
+            self.ENQUANTO()
+        elif (self.currentEqualTo(Type.READ)):
+            self.LEIA()
+        elif (self.currentEqualTo(Type.WRITE)):
+            self.ESCREVA()
+        else:
+            self.syntaxError()
 
+    def ATRIBUICAO(self):
+        self.consume(Type.ID)
+        self.consume(Type.ATRIB)
+        self.EXPR()
+        self.consume(Type.PVIRG)
+
+    def EXPR(self):
+        self.SIMPLES()
+        self.P()
+
+    def SIMPLES(self):
+        self.TERMO()
+        self.R()
+    
+    def P(self):
+        if(self.currentEqualTo(Type.OPREL)):
+            self.consume(Type.OPREL)
+            self.SIMPLES()
+
+    def TERMO(self):
+        self.FAT()
+        self.S()
+    
+    def R(self):
+        if(self.currentEqualTo(Type.OPAD)):
+            self.consume(Type.OPAD)
+            self.SIMPLES()
+
+    def FAT(self):
+        if(self.currentEqualTo(Type.ID)):
+            self.consume(Type.ID)
+        elif (self.currentEqualTo(Type.CTE)):
+            self.consume(Type.CTE)
+        elif (self.currentEqualTo(Type.ABREPAR)):
+            self.consume(Type.ABREPAR)
+            self.EXPR()
+            self.consume(Type.FECHAPAR)
+        elif (self.currentEqualTo(Type.TRUE)):
+            self.consume(Type.TRUE)
+        elif (self.currentEqualTo(Type.FALSE)):
+            self.consume(Type.FALSE)
+        elif (self.currentEqualTo(Type.OPNEG)):
+            self.consume(Type.OPNEG)
+            self.FAT()
+        else:
+            self.syntaxError()
+
+    def S(self):
+        if(self.currentEqualTo(Type.OPMUL)):
+            self.consume(Type.OPMUL)
+            self.TERMO()
+
+    def SE(self):
+        print('condicional')
+
+    def ENQUANTO(self):
+        print('repetição')
+
+    def LEIA(self):
+        print('leitura')
+
+    def ESCREVA(self):
+        print('escrita')
+
+    def G(self):
+        if(self.currentIn(Type.ID, Type.IF, Type.WHILE, Type.READ, Type.WRITE)):
+            self.LISTA_COMANDOS()
 
 if __name__== "__main__":
    #nome = input("Entre com o nome do arquivo: ")

@@ -10,7 +10,7 @@ class TypeToken:
     ATRIB = (6, '=')
     OPREL = (7, 'RELACIONAL')
     OPAD = (8, 'ADIÇÃO')
-    OPMULT = (9, '*')
+    OPMUL = (9, '*')
     OPNEG = (10, '!')
     PVIRG = (11, ';')
     DPONTOS = (12, ':')
@@ -178,7 +178,7 @@ class Lexer:
                 elif char in {'+', '-'}:
                     return Token(TypeToken.OPAD, lexeme, self.line)
                 elif char == '*':
-                    return Token(TypeToken.OPMULT, lexeme, self.line)
+                    return Token(TypeToken.OPMUL, lexeme, self.line)
                 elif char == '!':
                     return Token(TypeToken.OPNEG, lexeme, self.line)
                 elif char == '(':
