@@ -1,6 +1,25 @@
+# Nome Discente: Ryan William Fonseca
+# Matrícula: 0035165
+# Data: 16/11/2023
+
+# Declaro que sou o único autor e responsável por este programa. Todas as partes do programa, exceto as que foram fornecidas
+# pelo professor ou copiadas do livro ou das bibliotecas de Aho et al., foram desenvolvidas por mim. Declaro também que
+# sou responsável por todas  as eventuais cópias deste programa e que não distribui nem facilitei a distribuição de cópias. 
+
+# A classe Lexer tem por responsabilidade realizar a análise léxica do arquivo-fonte fornecido através da entrada,
+# para a gramática da Linguagem Z. Para esse objetivo, foi definida a função getToken, que fará a leitura de um caractere por vez
+# até formar os lexemas, e então atribuir uma classe definida em TypeToken. Caso nenhuma correspondência seja verificada,
+# o analisador léxico retorna o Token de ERROR padrão
+
+# Para implementação dos analisadores léxicos e sintáticos, foi consultado o material da Geovane Griesang, do
+# departamento de informática da Universidade de Santa Cruz do Sul - UNISC, O link pode ser encontrado em:
+# https://geovanegriesang.files.wordpress.com/2015/04/compiladores_01_introduc3a7c3a3o.pdf 
+# Além disso, foi consultado o material disponibilizado no ambiente Google Classroom, no decorrer da disciplina. 
+
 from os import path
 import re
 
+# Classe que define todos as classes de tokens possíveis para a linguagem Z
 class TypeToken:
     ID = (1, 'ID')
     READ = (2, 'READ')
@@ -33,6 +52,7 @@ class TypeToken:
     FALSE = (29, 'FALSE')
     TRUE = (30, 'TRUE')
 
+# Classe modelo para Tokens
 class Token:
     def __init__(self, typeToken, lexeme, line):
         (const, label) = typeToken
@@ -43,6 +63,7 @@ class Token:
         self.line = line
 
 class Lexer:
+    # Enumerador de palavras reservadas
     reservedWords = {
         'program': TypeToken.PROGRAM,
         'VAR': TypeToken.VAR,
@@ -63,6 +84,7 @@ class Lexer:
         self.fileName = fileName
         self.file = None
 
+    # Abre o arquivo, se existir e não estiver fechado
     def openFile(self):
         if not self.file is None:
             print('ERROR: File is already open')
@@ -74,12 +96,14 @@ class Lexer:
         self.buffer = ''
         self.line = 1
 
+    # Fecha o arquivo, se aberto
     def closeFile(self):
         if self.file is None:
             print('ERROR: File is already close')
             quit()
         self.file.close()
 
+    # Obtem o próximo caractere do arquivo-fonte, caso o buffer esteja vazio
     def getChar(self):
         if self.file is None:
             print('ERROR: There\'s no open file')
@@ -92,15 +116,18 @@ class Lexer:
             c = self.file.read(1)
             return None if len(c) == 0 else c
 
+    # Devolve o caractere lido para o buffer, para que seja novamente lido na próxima chamada de getChar()
     def ungetChar(self, c):
         if not c is None:
             self.buffer = self.buffer + c
 
+    # Maquina de estados responsável por classificar os tokens, conforme os aspectos léxicos da linguagem
     def getToken(self):
         lexeme = ''
         state = 1
         char = None
         while (True):
+            # Estado 1 elimina os espaços, quebras de linha e tabulação e realiza a mudança para outros estados 
             if state == 1:
                 char = self.getChar()
                 if char is None:
@@ -120,22 +147,26 @@ class Lexer:
                     state = 6
                 else:
                     return Token(TypeToken.ERROR, char, self.line)
+            # Estado 2 classifica os lexemas em identificadores
             elif state == 2:
-                #IDENTIFICADORES
                 lexeme = lexeme + char
+                # Verifica se o identificador não atingiu o limite de 32 caracteres definidos
                 if len(lexeme) > 32:
                     return Token(TypeToken.ERROR, lexeme, self.line)
                 char = self.getChar()
+                # Verifica se o caractere lido está na forma de letra do alfabeto ou número decimal
                 if char is None or (not re.match('^[A-Za-z0-9]+$', char)):
                     self.ungetChar(char)
+                    # Verifica se o identificador formado não corresponde a uma palavra reservada
                     if lexeme in Lexer.reservedWords:
                         return Token(Lexer.reservedWords[lexeme], lexeme, self.line)
                     else:
                         return Token(TypeToken.ID, lexeme, self.line)
+            # Estado 3 classifica os lexemas que podem estar na forma de números inteiros e reais, em constantes
             elif state == 3:
-                #CONSTANTES NUMÉRICAS REAIS/INTEIRAS
                 lexeme = lexeme + char
                 char = self.getChar()
+                # Realiza a validação específica para números reais do ponto flutuante
                 if char == ".":
                     if "." in lexeme:
                         return Token(TypeToken.ERROR, lexeme, self.line)
@@ -143,8 +174,8 @@ class Lexer:
                 if char is None or (not char.isdigit()):
                     self.ungetChar(char)
                     return Token(TypeToken.CTE, lexeme, self.line)
+            # Estado 4 classifica os lexemas que estejam entre aspas duplas em cadeias de caracteres
             elif state == 4:
-                #CADEIAS DE CARACTERES
                 if char != '"':
                     lexeme = lexeme + char
                 char = self.getChar()
@@ -157,9 +188,10 @@ class Lexer:
                         return Token(TypeToken.CADEIA, lexeme, self.line)
                     else:
                         state = 1
+            # Estado 5 classifica os demais tokens de estrutura simples, como operadores, parenteses e outros
             elif state == 5:
-                #DEMAIS CLASSES DE TOKENS
                 lexeme = lexeme + char
+                # Identifica os operadores relacionais, bem como o operador de atribuição
                 if char in {'=', '<', '>'}:
                     nextChar = self.getChar()
                     if nextChar == '=' or (char == '<' and nextChar == '>'):
@@ -189,17 +221,17 @@ class Lexer:
                     return Token(TypeToken.ABRECH, lexeme, self.line)
                 elif char == '}':
                     return Token(TypeToken.FECHACH, lexeme, self.line)
+            # Estado 6 é responsável por realizar ignorar os comentários em linha ou bloco
             elif state == 6:
-                # COMENTÁRIOS
                 nextChar = self.getChar()
                 if nextChar == '\n':
                     return Token(TypeToken.ERROR, char, self.line)
-                # REMOVE COMENTÁRIOS DE LINHA
+                # Remove comentários em linha
                 if nextChar == '/':
                     while (char is not None) and (char != '\n'):
                         char = self.getChar()
                     self.ungetChar(char)
-                # REMOVE COMENTÁRIOS DE MULTIPLAS LINHAS
+                # Remove comentários em bloco
                 if nextChar == '*':
                     while (char is not None):
                         char = self.getChar()
@@ -212,11 +244,12 @@ class Lexer:
                 state = 1
 
 if __name__== "__main__":
-    lex = Lexer('exemplos/exemplo2.txt')
-    lex.openFile()
+    fileName = input("Informe o caminho do arquivo: ")
+    lexer = Lexer(fileName)
+    lexer.openFile()
     while(True):
-       token = lex.getToken()
+       token = lexer.getToken()
        print("token = %s \nlexeme = %s \nline = %d \n" % (token.label, token.lexeme, token.line))
        if token.const == TypeToken.EOF[0]:
            break
-    lex.closeFile()
+    lexer.closeFile()
