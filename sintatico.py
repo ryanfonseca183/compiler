@@ -26,6 +26,9 @@ class Syntactic:
     def __init__(self):
         self.lexer = None
         self.currentToken = None
+        self.error = False
+        self.panic = False
+        self.sincronismToken = [Type.PVIRG, Type.EOF]
 
     # Inicia o processo de análise, com a regra de partida da gramática
     def analyze(self, fileName):
@@ -39,6 +42,7 @@ class Syntactic:
         self.C_COMP()
         self.consume(Type.EOF)
         self.lexer.closeFile()
+        return not self.error
 
     # Verifica se o token atual, é igual ao token esperado
     def currentEqualTo(self, token):
@@ -60,12 +64,25 @@ class Syntactic:
 
     # Obtem o próximo token, caso o token atual seja igual ao esperado
     def consume(self, token):
-        if not self.currentEqualTo(token):
+        if not self.panic and self.currentEqualTo(token):
+            self.currentToken = self.lexer.getToken()
+        elif not self.panic:
+            self.panic = True
+            self.error = True
             print('[Line %d] Syntax Error: "%s" was expected but received "%s"' % (
                 self.currentToken.line, token[1], self.currentToken.lexeme
             ))
-            quit()
-        self.currentToken = self.lexer.getToken()
+            searching = True
+            while searching:
+                self.currentToken = self.lexer.getToken()
+                for tk in self.sincronismToken:
+                    if self.currentEqualTo(tk):
+                        searching = False
+                        break
+        elif self.currentEqualTo(token):
+            self.currentToken = self.lexer.getToken()
+            self.panic = False
+        else: pass
 
     # As funções a seguir definem cada uma das regras de derivação da linguagem
     def PROG(self):
