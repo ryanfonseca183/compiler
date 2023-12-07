@@ -23,11 +23,12 @@ from lexico import TypeToken as Type, Token, Lexer
 
 class Syntactic:
 
-    def __init__(self):
+    def __init__(self, table):
         self.lexer = None
         self.currentToken = None
         self.error = False
         self.panic = False
+        self.table = table
         self.sincronismToken = [Type.PVIRG, Type.EOF]
 
     # Inicia o processo de análise, com a regra de partida da gramática
@@ -35,11 +36,10 @@ class Syntactic:
         if self.lexer is not None:
             print('ERROR: File is already being processed')
             quit()
-        self.lexer = Lexer(fileName)
+        self.lexer = Lexer(fileName, self.table)
         self.lexer.openFile()
         self.currentToken = self.lexer.getToken()
         self.PROG()
-        self.C_COMP()
         self.consume(Type.EOF)
         self.lexer.closeFile()
         return not self.error
@@ -90,6 +90,7 @@ class Syntactic:
         self.consume(Type.ID)
         self.consume(Type.PVIRG)
         self.DECLS()
+        self.C_COMP()
     
     def DECLS(self):
         if self.currentEqualTo(Type.VAR):
