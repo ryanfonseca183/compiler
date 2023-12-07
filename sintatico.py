@@ -24,12 +24,13 @@ from lexico import TypeToken as Type, Token, Lexer
 class Syntactic:
 
     def __init__(self, table):
+        self.debug = False
         self.lexer = None
         self.currentToken = None
         self.error = False
         self.panic = False
         self.table = table
-        self.sincronismToken = [Type.PVIRG, Type.EOF]
+        self.sincronismToken = [Type.PVIRG, Type.EOF, Type.WHILE, Type.IF, Type.ELSE, Type.ABRECH, Type.FECHACH, Type.ABREPAR, Type.FECHAPAR]
 
     # Inicia o processo de análise, com a regra de partida da gramática
     def analyze(self, fileName):
@@ -42,7 +43,7 @@ class Syntactic:
         self.PROG()
         self.consume(Type.EOF)
         self.lexer.closeFile()
-        return not self.error
+        return self.error
 
     # Verifica se o token atual, é igual ao token esperado
     def currentEqualTo(self, token):
@@ -55,37 +56,27 @@ class Syntactic:
                 return 1
         return 0
 
-    # Exibe um erro de sintaxe padrão e encerra a execução do programa
-    def syntaxError(self):
-        print('[Line %d] Syntax Error: Unexpected "%s"' % (
-            self.currentToken.line, self.currentToken.lexeme
-        ))
-        quit()
-
     # Obtem o próximo token, caso o token atual seja igual ao esperado
     def consume(self, token):
-        if not self.panic and self.currentEqualTo(token):
+        if self.currentEqualTo(token):
             self.currentToken = self.lexer.getToken()
-        elif not self.panic:
+        else:
             self.panic = True
             self.error = True
             print('[Line %d] Syntax Error: "%s" was expected but received "%s"' % (
                 self.currentToken.line, token[1], self.currentToken.lexeme
             ))
-            searching = True
-            while searching:
+            while self.panic:
                 self.currentToken = self.lexer.getToken()
-                for tk in self.sincronismToken:
-                    if self.currentEqualTo(tk):
-                        searching = False
-                        break
-        elif self.currentEqualTo(token):
-            self.currentToken = self.lexer.getToken()
-            self.panic = False
-        else: pass
+                if self.currentIn(*self.sincronismToken):
+                    if(self.currentIn(Type.PVIRG, Type.ELSE)):
+                        self.currentToken = self.lexer.getToken()
+                    self.panic = False
+                    break
 
     # As funções a seguir definem cada uma das regras de derivação da linguagem
     def PROG(self):
+        self.debug and print('PROG')
         self.consume(Type.PROGRAM)
         self.consume(Type.ID)
         self.consume(Type.PVIRG)
@@ -93,29 +84,35 @@ class Syntactic:
         self.C_COMP()
     
     def DECLS(self):
+        self.debug and print('DECLS')
         if self.currentEqualTo(Type.VAR):
             self.consume(Type.VAR)
             self.LIST_DECLS()
     
     def LIST_DECLS(self):
+        self.debug and print('LIST_DECLS')
         self.DECL_TIPO()
         self.D()
 
     def DECL_TIPO(self):
+        self.debug and print('DECL_TIPO')
         self.LIST_ID()
         self.consume(Type.DPONTOS)
         self.TIPO()
         self.consume(Type.PVIRG)
 
     def D(self):
+        self.debug and print('D')
         if self.currentEqualTo(Type.ID):
             self.LIST_DECLS()
 
     def LIST_ID(self):
+        self.debug and print('LIST_ID')
         self.consume(Type.ID)
         self.E()
 
     def TIPO(self):
+        self.debug and print('TIPO')
         if self.currentEqualTo(Type.INT): 
             self.consume(Type.INT)
         elif self.currentEqualTo(Type.REAL): 
@@ -124,24 +121,26 @@ class Syntactic:
             self.consume(Type.BOOL)
         elif self.currentEqualTo(Type.CHAR):
             self.consume(Type.CHAR)
-        else:
-            self.syntaxError()
 
     def E(self):
+        self.debug and print('E')
         if self.currentEqualTo(Type.VIRG):
             self.consume(Type.VIRG)
             self.LIST_ID()
         
     def C_COMP(self):
+        self.debug and print('C_COMP')
         self.consume(Type.ABRECH)
         self.LISTA_COMANDOS()
         self.consume(Type.FECHACH)
 
     def LISTA_COMANDOS(self):
+        self.debug and print('LISTA_COMANDOS')
         self.COMANDOS()
         self.G()
     
     def COMANDOS(self):
+        self.debug and print('COMANDOS')
         if (self.currentEqualTo(Type.ID)): 
             self.ATRIBUICAO()
         elif (self.currentEqualTo(Type.IF)):
@@ -152,38 +151,43 @@ class Syntactic:
             self.LEIA()
         elif (self.currentEqualTo(Type.WRITE)):
             self.ESCREVA()
-        else:
-            self.syntaxError()
 
     def ATRIBUICAO(self):
+        self.debug and print('ATRIBUICAO')
         self.consume(Type.ID)
         self.consume(Type.ATRIB)
         self.EXPR()
         self.consume(Type.PVIRG)
 
     def EXPR(self):
+        self.debug and print('EXPR')
         self.SIMPLES()
         self.P()
 
     def SIMPLES(self):
+        self.debug and print('SIMPLES')
         self.TERMO()
         self.R()
     
     def P(self):
+        self.debug and print('P')
         if(self.currentEqualTo(Type.OPREL)):
             self.consume(Type.OPREL)
             self.SIMPLES()
 
     def TERMO(self):
+        self.debug and print('TERMO')
         self.FAT()
         self.S()
     
     def R(self):
+        self.debug and print('R')
         if(self.currentEqualTo(Type.OPAD)):
             self.consume(Type.OPAD)
             self.SIMPLES()
 
     def FAT(self):
+        self.debug and print('FAT')
         if(self.currentEqualTo(Type.ID)):
             self.consume(Type.ID)
         elif (self.currentEqualTo(Type.CTE)):
@@ -199,15 +203,15 @@ class Syntactic:
         elif (self.currentEqualTo(Type.OPNEG)):
             self.consume(Type.OPNEG)
             self.FAT()
-        else:
-            self.syntaxError()
 
     def S(self):
+        self.debug and print('S')
         if(self.currentEqualTo(Type.OPMUL)):
             self.consume(Type.OPMUL)
             self.TERMO()
 
     def SE(self):
+        self.debug and print('SE')
         self.consume(Type.IF)
         self.consume(Type.ABREPAR)
         self.EXPR()
@@ -216,11 +220,13 @@ class Syntactic:
         self.H()
 
     def H(self):
+        self.debug and print('H')
         if self.currentEqualTo(Type.ELSE):
             self.consume(Type.ELSE)
             self.C_COMP()
 
     def ENQUANTO(self):
+        self.debug and print('ENQUANTO')
         self.consume(Type.WHILE)
         self.consume(Type.ABREPAR)
         self.EXPR()
@@ -228,6 +234,7 @@ class Syntactic:
         self.C_COMP()
 
     def LEIA(self):
+        self.debug and print('LEIA')
         self.consume(Type.READ)
         self.consume(Type.ABREPAR)
         self.LIST_ID()
@@ -235,6 +242,7 @@ class Syntactic:
         self.consume(Type.PVIRG)
 
     def ESCREVA(self):
+        self.debug and print('ESCREVA')
         self.consume(Type.WRITE)
         self.consume(Type.ABREPAR)
         self.LIST_W()
@@ -242,23 +250,25 @@ class Syntactic:
         self.consume(Type.PVIRG)
 
     def LIST_W(self):
+        self.debug and print('LIST_W')
         self.ELEM_W()
         self.L()
 
     def ELEM_W(self):
+        self.debug and print('ELEM_W')
         if (self.currentEqualTo(Type.CADEIA)):
             self.consume(Type.CADEIA)
         elif (self.currentIn(Type.ID, Type.ABREPAR, Type.CTE, Type.TRUE, Type.FALSE, Type.OPNEG)):
             self.EXPR()
-        else:
-            self.syntaxError()
-
+        
     def L(self):
+        self.debug and print('L')
         if self.currentEqualTo(Type.VIRG):
             self.consume(Type.VIRG)
             self.LIST_W()
 
     def G(self):
+        self.debug and print('G')
         if(self.currentIn(Type.ID, Type.IF, Type.WHILE, Type.READ, Type.WRITE)):
             self.LISTA_COMANDOS()
 

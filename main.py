@@ -13,8 +13,8 @@ if __name__ == '__main__':
     tableFileName = args.t
     table = Table()
     parser = Syntactic(table)
-    response = parser.analyze(filename)
+    hasError = parser.analyze(filename)
     if tableFileName is not None:
         table.export(tableFileName)
-    if response:
+    if not hasError:
         print("Arquivo sintaticamente correto.")

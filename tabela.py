@@ -34,5 +34,4 @@ class Table:
             archive.write("-" * 42 + "\n")
             for symbol in self.symbols:
                 archive.write("{:<32} {:<10} \n".format(symbol[0], symbol[1] if len(symbol) > 1 else ""))
-            print(f"Tabela de Símbolos exportada para '{filename}' com sucesso.")
         
