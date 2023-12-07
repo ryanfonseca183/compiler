@@ -85,6 +85,7 @@ class Lexer:
         self.file = None
         self.table = table
         self.identifiersWithMissingType = []
+        self.functionKeywordWasRead = False
 
     # Abre o arquivo, se existir e não estiver fechado
     def openFile(self):
@@ -161,6 +162,7 @@ class Lexer:
                     self.ungetChar(char)
                     # Verifica se o identificador formado não corresponde a uma palavra reservada
                     if lexeme in Lexer.reservedWords:
+                        self.functionKeywordWasRead = lexeme == 'program'
                         if(lexeme in ('real', 'bool', 'char', 'int')):
                             for identifier in self.identifiersWithMissingType:
                                 self.table.setType(identifier, lexeme)
@@ -168,7 +170,9 @@ class Lexer:
                         return Token(Lexer.reservedWords[lexeme], lexeme, self.line)
                     else:
                         if not self.table.getType(lexeme):
-                            self.identifiersWithMissingType.append(lexeme)
+                            if not self.functionKeywordWasRead:
+                                self.identifiersWithMissingType.append(lexeme)
+                            self.functionKeywordWasRead = False
                             self.table.setSymbol(lexeme)
                         return Token(TypeToken.ID, lexeme, self.line)
             # Estado 3 classifica os lexemas que podem estar na forma de números inteiros e reais, em constantes
