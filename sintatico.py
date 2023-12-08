@@ -28,6 +28,7 @@ class Syntactic:
     def __init__(self, table):
         self.stack = []
         self.debug = False
+        self.stackDebug = False
         self.lexer = None
         self.currentToken = None
         self.error = False
@@ -51,11 +52,11 @@ class Syntactic:
 
     def stackRule(self, rule):
         self.stack.append(rule)
-        self.debug and print('Empilhando "%s"' % (rule))
+        self.stackDebug and print('Empilhando "%s"' % (rule))
 
     def unstackRule(self):
-        removed = self.stack.pop
-        self.debug and print('Desempilhando "%s"' % removed)
+        removed = self.stack.pop()
+        self.stackDebug and print('Desempilhando "%s"' % removed)
 
     # Verifica se o token atual, é igual ao token esperado
     def currentEqualTo(self, token):
@@ -63,13 +64,12 @@ class Syntactic:
     
     # Verifica se o token atual está entre os tokens esperados
     def currentIn(self, *tokens):
-        print(tokens)
         for token in tokens:
             if self.currentToken.const == token[0]:
                 return 1
         return 0
 
-    def error(self, expected):
+    def showError(self, expected):
         self.error = True
         print('[Line %d] Syntax Error: "%s" was expected but received "%s"' % (
             self.currentToken.line, expected, self.currentToken.lexeme
@@ -90,7 +90,6 @@ class Syntactic:
             else: 
                 print('[Line %d] Syntax Error: Unexpected "%s" ' % (self.currentToken.line, self.currentToken.lexeme))
                 self.currentToken = self.lexer.getToken()
-
             while self.panic:
                 first = getattr(First, self.stack[-1])
                 follow = getattr(Follow, self.stack[-1])
@@ -108,12 +107,12 @@ class Syntactic:
         if self.currentEqualTo(Type.PROGRAM):
             self.consume(Type.PROGRAM)
         else:
-            self.error('program')
+            self.showError('program')
         #Verifica se o nome do programa foi declarado
         if self.currentEqualTo(Type.ID):
             self.consume(Type.ID)
         else:
-            self.error('id')
+            self.showError('id')
         self.consume(Type.PVIRG)
         self.DECLS()
         self.stackRule('C_COMP')
@@ -338,7 +337,7 @@ class Syntactic:
         if self.currentEqualTo(Type.FECHAPAR):
             self.consume(Type.FECHAPAR)
         else:
-            self.error(')')
+            self.showError(')')
         self.consume(Type.PVIRG)
         self.unstackRule()
 
@@ -351,7 +350,7 @@ class Syntactic:
         if self.currentEqualTo(Type.FECHAPAR):
             self.consume(Type.FECHAPAR)
         else:
-            self.error(')')
+            self.showError(')')
         self.consume(Type.PVIRG)
         self.unstackRule()
 
