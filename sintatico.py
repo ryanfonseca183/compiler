@@ -20,17 +20,20 @@
 # Além disso, foi consultado o material disponibilizado no ambiente Google Classroom, no decorrer da disciplina. 
 
 from lexico import TypeToken as Type, Token, Lexer
+from follow import Follow
+from first import First
 
 class Syntactic:
 
     def __init__(self, table):
-        self.debug = True
+        self.stack = []
+        self.debug = False
         self.lexer = None
         self.currentToken = None
         self.error = False
         self.panic = False
         self.table = table
-        self.sincronismToken = [Type.PVIRG, Type.EOF, Type.ABRECH, Type.FECHACH, Type.ABREPAR, Type.FECHAPAR, Type.IF, Type.ELSE, Type.DPONTOS, Type.WHILE, Type.INT, Type.REAL, Type.BOOL, Type.CHAR, Type.WRITE, Type.READ]
+        self.sincronismToken = [Type.PVIRG, Type.EOF]
 
     # Inicia o processo de análise, com a regra de partida da gramática
     def analyze(self, fileName):
@@ -40,10 +43,19 @@ class Syntactic:
         self.lexer = Lexer(fileName, self.table)
         self.lexer.openFile()
         self.currentToken = self.lexer.getToken()
+        self.stackRule('PROG')
         self.PROG()
         self.consume(Type.EOF)
         self.lexer.closeFile()
         return self.error
+
+    def stackRule(self, rule):
+        self.stack.append(rule)
+        self.debug and print('Empilhando "%s"' % (rule))
+
+    def unstackRule(self):
+        removed = self.stack.pop
+        self.debug and print('Desempilhando "%s"' % removed)
 
     # Verifica se o token atual, é igual ao token esperado
     def currentEqualTo(self, token):
@@ -51,10 +63,18 @@ class Syntactic:
     
     # Verifica se o token atual está entre os tokens esperados
     def currentIn(self, *tokens):
+        print(tokens)
         for token in tokens:
             if self.currentToken.const == token[0]:
                 return 1
         return 0
+
+    def error(self, expected):
+        self.error = True
+        print('[Line %d] Syntax Error: "%s" was expected but received "%s"' % (
+            self.currentToken.line, expected, self.currentToken.lexeme
+        ))
+        self.currentToken = self.lexer.getToken()
 
     # Obtem o próximo token, caso o token atual seja igual ao esperado
     def consume(self, token = None):
@@ -72,47 +92,73 @@ class Syntactic:
                 self.currentToken = self.lexer.getToken()
 
             while self.panic:
-                if self.currentIn(*self.sincronismToken):
+                first = getattr(First, self.stack[-1])
+                follow = getattr(Follow, self.stack[-1])
+                default = self.sincronismToken
+                if self.currentIn(*first, *follow, *default):
                     self.panic = False
                     break
                 self.currentToken = self.lexer.getToken()
 
     # As funções a seguir definem cada uma das regras de derivação da linguagem
     def PROG(self):
+        self.stackRule('DECLS')
         self.debug and print('PROG')
-        self.consume(Type.PROGRAM)
-        self.consume(Type.ID)
+        #Verifica se programa foi declarado
+        if self.currentEqualTo(Type.PROGRAM):
+            self.consume(Type.PROGRAM)
+        else:
+            self.error('program')
+        #Verifica se o nome do programa foi declarado
+        if self.currentEqualTo(Type.ID):
+            self.consume(Type.ID)
+        else:
+            self.error('id')
         self.consume(Type.PVIRG)
         self.DECLS()
+        self.stackRule('C_COMP')
         self.C_COMP()
+        self.unstackRule()
     
     def DECLS(self):
         self.debug and print('DECLS')
         if self.currentEqualTo(Type.VAR):
+            self.stackRule('LIST_DECLS')
             self.consume(Type.VAR)
             self.LIST_DECLS()
+        self.unstackRule()
     
     def LIST_DECLS(self):
         self.debug and print('LIST_DECLS')
+        self.stackRule('DECL_TIPO')
         self.DECL_TIPO()
+        self.stackRule('D')
         self.D()
+        self.unstackRule()
 
     def DECL_TIPO(self):
         self.debug and print('DECL_TIPO')
+        self.stackRule('LIST_ID')
         self.LIST_ID()
+        self.stackRule('TIPO')
         self.consume(Type.DPONTOS)
         self.TIPO()
         self.consume(Type.PVIRG)
+        self.unstackRule()
 
     def D(self):
         self.debug and print('D')
         if self.currentEqualTo(Type.ID):
+            self.stackRule('LIST_DECLS')
             self.LIST_DECLS()
+        self.unstackRule()
 
     def LIST_ID(self):
         self.debug and print('LIST_ID')
+        self.stackRule('E')
         self.consume(Type.ID)
         self.E()
+        self.unstackRule()
 
     def TIPO(self):
         self.debug and print('TIPO')
@@ -126,79 +172,99 @@ class Syntactic:
             self.consume(Type.CHAR)
         else:
             self.consume(Type.TIPO)
+        self.unstackRule()
 
     def E(self):
         self.debug and print('E')
         if self.currentEqualTo(Type.VIRG):
+            self.stackRule('LIST_ID')
             self.consume(Type.VIRG)
             self.LIST_ID()
+        self.unstackRule()
         
     def C_COMP(self):
+        self.stackRule('LISTA_COMANDOS')
         self.debug and print('C_COMP')
         self.consume(Type.ABRECH)
         self.LISTA_COMANDOS()
         self.consume(Type.FECHACH)
+        self.unstackRule()
 
     def LISTA_COMANDOS(self):
         self.debug and print('LISTA_COMANDOS')
+        self.stackRule('COMANDOS')
         self.COMANDOS()
+        self.stackRule('G')
         self.G()
+        self.unstackRule()
     
     def COMANDOS(self):
         self.debug and print('COMANDOS')
-        if (self.currentEqualTo(Type.ID)): 
+        if (self.currentEqualTo(Type.ID)):
+            self.stackRule('ATRIBUICAO')
             self.ATRIBUICAO()
         elif (self.currentEqualTo(Type.IF)):
+            self.stackRule('SE')
             self.SE()
         elif (self.currentEqualTo(Type.WHILE)):
+            self.stackRule('ENQUANTO')
             self.ENQUANTO()
         elif (self.currentEqualTo(Type.READ)):
+            self.stackRule('LEIA')
             self.LEIA()
         elif (self.currentEqualTo(Type.WRITE)):
+            self.stackRule('ESCREVA')
             self.ESCREVA()
+        self.unstackRule()
 
     def ATRIBUICAO(self):
+        self.stackRule('EXPR')
         self.debug and print('ATRIBUICAO')
         self.consume(Type.ID)
         self.consume(Type.ATRIB)
-        #Se não reconheceu o operador de atribuição e o proximo for PVIRG, então consome
-        if(self.currentEqualTo(Type.PVIRG)):
-            self.consume(Type.PVIRG)
-            return
         self.EXPR()
-        if self.currentEqualTo(Type.PVIRG):
-            self.consume(Type.PVIRG)
-        else:
-            print('[Line %d] Syntax Error: "%s" was expected but received "%s"' % (
-                self.currentToken.line, ';', self.currentToken.lexeme
-            ))
+        self.consume(Type.PVIRG)
+        self.unstackRule()
 
     def EXPR(self):
         self.debug and print('EXPR')
+        self.stackRule('SIMPLES')
         self.SIMPLES()
+        self.stackRule('P')
         self.P()
+        self.unstackRule()
 
     def SIMPLES(self):
         self.debug and print('SIMPLES')
+        self.stackRule('TERMO')
         self.TERMO()
+        self.stackRule('R')
         self.R()
+        self.unstackRule()
     
     def P(self):
         self.debug and print('P')
         if(self.currentEqualTo(Type.OPREL)):
+            self.stackRule('SIMPLES')
             self.consume(Type.OPREL)
             self.SIMPLES()
+        self.unstackRule()
 
     def TERMO(self):
         self.debug and print('TERMO')
+        self.stackRule('FAT')
         self.FAT()
+        self.stackRule('S')
         self.S()
+        self.unstackRule()
     
     def R(self):
         self.debug and print('R')
         if(self.currentEqualTo(Type.OPAD)):
+            self.stackRule('SIMPLES')
             self.consume(Type.OPAD)
             self.SIMPLES()
+        self.unstackRule()
 
     def FAT(self):
         self.debug and print('FAT')
@@ -207,6 +273,7 @@ class Syntactic:
         elif (self.currentEqualTo(Type.CTE)):
             self.consume(Type.CTE)
         elif (self.currentEqualTo(Type.ABREPAR)):
+            self.stackRule('EXPR')
             self.consume(Type.ABREPAR)
             self.EXPR()
             self.consume(Type.FECHAPAR)
@@ -215,80 +282,112 @@ class Syntactic:
         elif (self.currentEqualTo(Type.FALSE)):
             self.consume(Type.FALSE)
         elif (self.currentEqualTo(Type.OPNEG)):
+            self.stackRule('FAT')
             self.consume(Type.OPNEG)
             self.FAT()
         else:
             self.consume()
+        self.unstackRule()
 
     def S(self):
         self.debug and print('S')
         if(self.currentEqualTo(Type.OPMUL)):
+            self.stackRule('TERMO')
             self.consume(Type.OPMUL)
             self.TERMO()
+        self.unstackRule()
 
     def SE(self):
         self.debug and print('SE')
+        self.stackRule('EXPR')
         self.consume(Type.IF)
         self.consume(Type.ABREPAR)
         self.EXPR()
+        self.stackRule('C_COMP')
         self.consume(Type.FECHAPAR)
         self.C_COMP()
+        self.stackRule('H')
         self.H()
+        self.unstackRule()
 
     def H(self):
         self.debug and print('H')
         if self.currentEqualTo(Type.ELSE):
+            self.stackRule('C_COMP')
             self.consume(Type.ELSE)
             self.C_COMP()
+        self.unstackRule()
 
     def ENQUANTO(self):
         self.debug and print('ENQUANTO')
+        self.stackRule('EXPR')
         self.consume(Type.WHILE)
         self.consume(Type.ABREPAR)
         self.EXPR()
+        self.stackRule('C_COMP')
         self.consume(Type.FECHAPAR)
         self.C_COMP()
+        self.unstackRule()
 
     def LEIA(self):
+        self.stackRule('LIST_ID')
         self.debug and print('LEIA')
         self.consume(Type.READ)
         self.consume(Type.ABREPAR)
         self.LIST_ID()
-        self.consume(Type.FECHAPAR)
+        if self.currentEqualTo(Type.FECHAPAR):
+            self.consume(Type.FECHAPAR)
+        else:
+            self.error(')')
         self.consume(Type.PVIRG)
+        self.unstackRule()
 
     def ESCREVA(self):
+        self.stackRule('LIST_W')
         self.debug and print('ESCREVA')
         self.consume(Type.WRITE)
         self.consume(Type.ABREPAR)
         self.LIST_W()
-        self.consume(Type.FECHAPAR)
+        if self.currentEqualTo(Type.FECHAPAR):
+            self.consume(Type.FECHAPAR)
+        else:
+            self.error(')')
         self.consume(Type.PVIRG)
+        self.unstackRule()
 
     def LIST_W(self):
         self.debug and print('LIST_W')
+        self.stackRule('ELEM_W')
         self.ELEM_W()
+        self.stackRule('L')
         self.L()
+        self.unstackRule()
 
     def ELEM_W(self):
         self.debug and print('ELEM_W')
         if (self.currentEqualTo(Type.CADEIA)):
             self.consume(Type.CADEIA)
         elif (self.currentIn(Type.ID, Type.ABREPAR, Type.CTE, Type.TRUE, Type.FALSE, Type.OPNEG)):
+            self.stackRule('EXPR')
             self.EXPR()
         else:
             self.consume()
+        self.unstackRule()
         
     def L(self):
         self.debug and print('L')
         if self.currentEqualTo(Type.VIRG):
+            self.stackRule('LIST_W')
             self.consume(Type.VIRG)
             self.LIST_W()
+        self.unstackRule()
 
     def G(self):
         self.debug and print('G')
         if(self.currentIn(Type.ID, Type.IF, Type.WHILE, Type.READ, Type.WRITE)):
+            self.stackRule('LISTA_COMANDOS')
             self.LISTA_COMANDOS()
+        self.unstackRule()
 
 if __name__== "__main__":
    fileName = input("Informe o caminho do arquivo: ")
