@@ -24,13 +24,13 @@ from lexico import TypeToken as Type, Token, Lexer
 class Syntactic:
 
     def __init__(self, table):
-        self.debug = False
+        self.debug = True
         self.lexer = None
         self.currentToken = None
         self.error = False
         self.panic = False
         self.table = table
-        self.sincronismToken = [Type.PVIRG, Type.EOF, Type.WHILE, Type.IF, Type.ELSE, Type.ABRECH, Type.FECHACH, Type.ABREPAR, Type.FECHAPAR]
+        self.sincronismToken = [Type.PVIRG, Type.EOF, Type.ABRECH, Type.FECHACH, Type.ABREPAR, Type.FECHAPAR, Type.IF, Type.ELSE, Type.DPONTOS, Type.WHILE, Type.INT, Type.REAL, Type.BOOL, Type.CHAR, Type.WRITE, Type.READ]
 
     # Inicia o processo de análise, com a regra de partida da gramática
     def analyze(self, fileName):
@@ -57,22 +57,25 @@ class Syntactic:
         return 0
 
     # Obtem o próximo token, caso o token atual seja igual ao esperado
-    def consume(self, token):
-        if self.currentEqualTo(token):
+    def consume(self, token = None):
+        if token and self.currentEqualTo(token):
             self.currentToken = self.lexer.getToken()
         else:
             self.panic = True
             self.error = True
-            print('[Line %d] Syntax Error: "%s" was expected but received "%s"' % (
-                self.currentToken.line, token[1], self.currentToken.lexeme
-            ))
-            while self.panic:
+            if token: 
+                print('[Line %d] Syntax Error: "%s" was expected but received "%s"' % (
+                    self.currentToken.line, token[1], self.currentToken.lexeme
+                ))
+            else: 
+                print('[Line %d] Syntax Error: Unexpected "%s" ' % (self.currentToken.line, self.currentToken.lexeme))
                 self.currentToken = self.lexer.getToken()
+
+            while self.panic:
                 if self.currentIn(*self.sincronismToken):
-                    if(self.currentIn(Type.PVIRG, Type.ELSE)):
-                        self.currentToken = self.lexer.getToken()
                     self.panic = False
                     break
+                self.currentToken = self.lexer.getToken()
 
     # As funções a seguir definem cada uma das regras de derivação da linguagem
     def PROG(self):
@@ -121,6 +124,8 @@ class Syntactic:
             self.consume(Type.BOOL)
         elif self.currentEqualTo(Type.CHAR):
             self.consume(Type.CHAR)
+        else:
+            self.consume(Type.TIPO)
 
     def E(self):
         self.debug and print('E')
@@ -156,8 +161,17 @@ class Syntactic:
         self.debug and print('ATRIBUICAO')
         self.consume(Type.ID)
         self.consume(Type.ATRIB)
+        #Se não reconheceu o operador de atribuição e o proximo for PVIRG, então consome
+        if(self.currentEqualTo(Type.PVIRG)):
+            self.consume(Type.PVIRG)
+            return
         self.EXPR()
-        self.consume(Type.PVIRG)
+        if self.currentEqualTo(Type.PVIRG):
+            self.consume(Type.PVIRG)
+        else:
+            print('[Line %d] Syntax Error: "%s" was expected but received "%s"' % (
+                self.currentToken.line, ';', self.currentToken.lexeme
+            ))
 
     def EXPR(self):
         self.debug and print('EXPR')
@@ -203,6 +217,8 @@ class Syntactic:
         elif (self.currentEqualTo(Type.OPNEG)):
             self.consume(Type.OPNEG)
             self.FAT()
+        else:
+            self.consume()
 
     def S(self):
         self.debug and print('S')
@@ -260,6 +276,8 @@ class Syntactic:
             self.consume(Type.CADEIA)
         elif (self.currentIn(Type.ID, Type.ABREPAR, Type.CTE, Type.TRUE, Type.FALSE, Type.OPNEG)):
             self.EXPR()
+        else:
+            self.consume()
         
     def L(self):
         self.debug and print('L')

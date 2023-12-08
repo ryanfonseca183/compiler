@@ -51,6 +51,7 @@ class TypeToken:
     WHILE = (28, 'WHILE')
     FALSE = (29, 'FALSE')
     TRUE = (30, 'TRUE')
+    TIPO = (31, 'TIPO')
 
 # Classe modelo para Tokens
 class Token:
